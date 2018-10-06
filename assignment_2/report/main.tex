@@ -188,6 +188,8 @@ Plot error signal energy (i.e. square of gain) vs p. \\
 \subsection{Answer}
 
 \textbf{Pre-Emphasis}
+Glotal shaping and radiation can be modelled by an one pole filter. We remove it by passing the signal through a pre emphasis filter. A pre-emphasis filter is used to counteract glottal roll-off in voiced speech. This helps to model the environment. 
+
 Note that in the plots, the original spectra is in blue and the pre-emphasized spectra is in green. 
 
 
@@ -289,12 +291,143 @@ Note that in the plots, the original spectra is in blue and the pre-emphasized s
 
 
 
+\begin{lstlisting}[language=Python, caption=hparams.py]
+win_size = 30.0
+dft_length = 1024
+files = ['machali_male_8k_a.wav', 'machali_male_8k_n.wav', 'machali_male_8k_i.wav', 'machali_male_16k_s.wav']
+colors = {12: 'r', 4: 'g', 6: 'b', 8: 'y', 10: 'm', 20: 'k'}
+displacements = {12: 80, 4: 0, 6: 20, 8: 40, 10: 60, 20: 100}
+orders = [4, 6, 8, 10, 12, 20]
+file_index = 0
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=Python, caption=q2a.py]
+import librosa
+from scipy import signal
+import numpy as np
+from math import pi
+import matplotlib.pyplot as plt
+import hparams
+
+def autocorr(x):
+    result = np.correlate(x, x, mode='full')
+    return result[int(result.size/2):]
+
+
+files = hparams.files
+file_index = hparams.file_index
+colors = hparams.colors
+displacements = hparams.displacements
+orders = hparams.orders
+
+
+y, samp_freq = librosa.load(files[file_index],sr=None)
+y = y/32768
+win_size = hparams.win_size/1000.0
+num_samples = int(samp_freq*win_size)
+
+window = y[int((len(y)-num_samples)/2):int((len(y) + num_samples)/2)]*np.hamming(num_samples)
+
+dft = np.fft.fft(window, hparams.dft_length)
+freq = np.fft.fftfreq(dft.shape[-1], 1/float(samp_freq))
+fig1 = plt.figure()
+plt.plot(freq[:int(len(freq)/2)], 20*np.log10(np.abs(dft[:int(len(dft)/2)])))
+plt.ylabel('DFT Amplitude')
+plt.xlabel('Frequency')
+plt.title('Spectra for '+files[file_index][-5:-4])
+
+
+for i in range(1, len(window)):
+    window[i] = window[i] - 15.0/16.0 * window[i-1]
+
+dft = np.fft.fft(window, hparams.dft_length)
+freq = np.fft.fftfreq(dft.shape[-1], 1/float(samp_freq))
+plt.plot(freq[:int(len(freq)/2)], 20*np.log10(np.abs(dft[:int(len(dft)/2)])), 'g')
+
+orders = np.multiply(orders,(samp_freq/8000))
+for order in orders:
+    order = int(order)
+
+    R = autocorr(window)
+    error = np.zeros(order+1)
+    error[0] = R[0]
+    G = np.zeros(order + 1)
+
+    coeffs = np.zeros(order+1)
+    dummy_coeffs = np.zeros(order + 1)
+    
+
+    for i in range(1, order +1):
+        reflec_coeffs = 0
+        dummy_coeffs[1:len(coeffs)] = coeffs[1:len(coeffs)]
+        
+        for j in range(1, i):
+            reflec_coeffs = reflec_coeffs + dummy_coeffs[j]*R[i-j]
+        reflec_coeffs = (R[i] - reflec_coeffs)/error[i - 1]
+
+        coeffs[i] = reflec_coeffs
+
+        for j in range(1, i):
+            coeffs[j] = dummy_coeffs[j] - reflec_coeffs*dummy_coeffs[i-j]
+
+        error[i] = (1-np.square(reflec_coeffs))*error[i-1]
+        G[i] = np.sqrt(error[i])
+    coeffs[0] = 1.0
+    coeffs[1:len(coeffs)] = -coeffs[1:len(coeffs)]
+    num_coeffs = np.zeros(coeffs.shape)
+    num_coeffs[0] = 1
+    
+    w, h = signal.freqz(num_coeffs, coeffs)
+
+    if file_index == 3:
+
+        if order == 12 or order == 20:
+            z, p, k = signal.tf2zpk(num_coeffs, coeffs)
+
+            fig3 = plt.figure()
+            
+            plt.plot(np.real(z), np.imag(z), 'xb')
+            plt.plot(np.real(p), np.imag(p), 'or')
+            plt.legend(['zeros', 'poles'], loc=2)
+            plt.grid()
+            plt.title('pole & zero plot | order = ' + str(order) )
+            plt.ylabel('real')
+            plt.xlabel('imaginary')
+            
+            plt.savefig( files[file_index][-5:-4] + '_pole-zero_'+str(order)+'_.png')
+
+
+    else:
+        if order == 6 or order == 10:
+            z, p, k = signal.tf2zpk(num_coeffs, coeffs)
+
+            fig3 = plt.figure()
+            
+            plt.plot(np.real(z), np.imag(z), 'xb')
+            plt.plot(np.real(p), np.imag(p), 'or')
+            plt.legend(['zeros', 'poles'], loc=2)
+            plt.grid()
+            plt.title('pole & zero plot | order = ' + str(order) )
+            plt.ylabel('Real')
+            plt.xlabel('Imaginary')
+            
+    
+            plt.savefig( files[file_index][-5:-4] + '_pole-zero_'+str(order)+'_.png')            
+
+plt.legend(['Orig', 'Order 4', 'Order 6', 'Order 8', 'Order 10', 'Order 12', 'Order 20'])
+plt.grid()
+# plt.show()
+\end{lstlisting}
+
+
+
 \newpage
 
 \textbf{Linear Predictive Coding Spectrum}
+From the figures, we can observe that as the order increases, the LP spectrum approaches the original specrtrum. When the order is low, only the prominent peaks are taken into account and the other pecularities are handled as the order increases which makes sense since we learnt in the class that the contribution in error is more where the value of the spectrum itself is large. i.e the error in linear prediction is proportional to the absolute value of the spectrum. Hence the error at peaks will contribute more than other areas. Since we adopt least square sum minimization strategy, the peaks are modelled at lower orders.  
 
-
-The gain for \textbackslash a\textbackslash from the natural recording of \textit{machali} is: 
+The LPC Spectrum of \textbackslash a\textbackslash from the natural recording of \textit{machali} is: 
 \begin{itemize}
 \item Order 2: 15.30 
 \item Order 4: 13.13
@@ -306,18 +439,14 @@ The gain for \textbackslash a\textbackslash from the natural recording of \texti
 \end{itemize}    
 
 \begin{figure}[h!]
-    \includegraphics[width=\linewidth]{./images/gain_a.png}
-    \caption{Gain of \textbackslash a\textbackslash from the natural recording of \textit{machali}}
+    \includegraphics[width=\linewidth]{./images/freq_resp_a.png}
+    \caption{LPC Spectrum of \textbackslash a\textbackslash from the natural recording of \textit{machali}}
     \label{fig:1}
 \end{figure}
 
  
- 
 
- 
- 
-
-The gain for \textbackslash n\textbackslash from the natural recording of \textit{machali} is: 
+The LPC Spectrum of \textbackslash n\textbackslash from the natural recording of \textit{machali} is: 
 
 \begin{itemize}
 \item Order 2: 39.31 
@@ -329,13 +458,13 @@ The gain for \textbackslash n\textbackslash from the natural recording of \texti
 \item Order 20: 16.12
 \end{itemize}  
 \begin{figure}[h!]
-    \includegraphics[width=\linewidth]{./images/gain_n.png}
-    \caption{Gain of \textbackslash n\textbackslash from the natural recording of \textit{machali}}
+    \includegraphics[width=\linewidth]{./images/freq_resp_n.png}
+    \caption{LPC Spectrum of \textbackslash n\textbackslash from the natural recording of \textit{machali}}
     \label{fig:1}
 \end{figure}
 
 
-The gain for \textbackslash I\textbackslash from the natural recording of \textit{machali} is: 
+The LPC Spectrum of \textbackslash I\textbackslash from the natural recording of \textit{machali} is: 
 \begin{itemize}
 \item Order 2: 50.79 
 \item Order 4: 28.53
@@ -348,12 +477,12 @@ The gain for \textbackslash I\textbackslash from the natural recording of \texti
 
 
 \begin{figure}[h!]
-    \includegraphics[width=\linewidth]{./images/gain_i.png}
-    \caption{Gain of \textbackslash I\textbackslash from the natural recording of \textit{machali}}
+    \includegraphics[width=\linewidth]{./images/freq_resp_i.png}
+    \caption{LPC Spectrum of \textbackslash I\textbackslash from the natural recording of \textit{machali}}
     \label{fig:1}
 \end{figure}
 
-The gain for \textbackslash s\textbackslash from the natural recording of \textit{machali} is: 
+The LPC Spectrum of \textbackslash s\textbackslash from the natural recording of \textit{machali} is: 
 
 \begin{itemize}
 \item Order 2: 67.89 
@@ -367,8 +496,8 @@ The gain for \textbackslash s\textbackslash from the natural recording of \texti
 
 
 \begin{figure}[h!]
-    \includegraphics[width=\linewidth]{./images/gain_s.png}
-    \caption{Gain of \textbackslash s\textbackslash from the natural recording of \textit{machali}}
+    \includegraphics[width=\linewidth]{./images/freq_resp_s.png}
+    \caption{LPC Spectrum of \textbackslash s\textbackslash from the natural recording of \textit{machali}}
     \label{fig:1}
 \end{figure}
 
@@ -406,6 +535,100 @@ The gain for \textbackslash s\textbackslash from the natural recording of \texti
     \caption{ Error Signal Energy for \textbackslash s\textbackslash from the natural recording of \textit{machali}}
     \label{fig:1}
 \end{figure}
+
+
+\begin{lstlisting}[language=Python, caption=hparams.py]
+win_size = 30.0
+dft_length = 1024
+files = ['machali_male_8k_a.wav', 'machali_male_8k_n.wav', 'machali_male_8k_i.wav', 'machali_male_16k_s.wav']
+colors = {12: 'r', 4: 'g', 6: 'b', 8: 'y', 10: 'm', 20: 'k'}
+displacements = {12: 80, 4: 0, 6: 20, 8: 40, 10: 60, 20: 100}
+orders = [4, 6, 8, 10, 12, 20]
+file_index = 0
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=Python, caption=q2b.py]
+import librosa
+from scipy import signal
+import numpy as np
+from math import pi
+import matplotlib.pyplot as plt
+import hparams
+
+def autocorr(x):
+    result = np.correlate(x, x, mode='full')
+    return result[int(result.size/2):]
+
+
+files = hparams.files
+file_index = hparams.file_index
+colors = hparams.colors
+displacements = hparams.displacements
+orders = hparams.orders
+
+
+y, samp_freq = librosa.load(files[file_index],sr=None)
+y = y/32768
+win_size = hparams.win_size/1000.0
+num_samples = int(samp_freq*win_size)
+
+window = y[int((len(y)-num_samples)/2):int((len(y) + num_samples)/2)]*np.hamming(num_samples)
+
+for i in range(1, len(window)):
+    window[i] = window[i] - 15.0/16.0 * window[i-1]
+
+dft = np.fft.fft(window, hparams.dft_length)
+freq = np.fft.fftfreq(dft.shape[-1], 1/float(samp_freq))
+plt.plot(freq[:int(len(freq)/2)], 20*np.log10(np.abs(dft[:int(len(dft)/2)])))
+
+plt.title('Frequency Response of '+ files[file_index][-5:-4])
+plt.ylabel('Amplitude [dB]')
+plt.xlabel('Frequency')
+
+orders = np.multiply(orders,(samp_freq/8000))
+for order in orders:
+    order = int(order)
+
+    R = autocorr(window)
+    error = np.zeros(order+1)
+    error[0] = R[0]
+    G = np.zeros(order + 1)
+
+    coeffs = np.zeros(order+1)
+    dummy_coeffs = np.zeros(order + 1)
+    
+
+    for i in range(1, order +1):
+        reflec_coeffs = 0
+        dummy_coeffs[1:len(coeffs)] = coeffs[1:len(coeffs)]
+        
+        for j in range(1, i):
+            reflec_coeffs = reflec_coeffs + dummy_coeffs[j]*R[i-j]
+        reflec_coeffs = (R[i] - reflec_coeffs)/error[i - 1]
+
+        coeffs[i] = reflec_coeffs
+
+        for j in range(1, i):
+            coeffs[j] = dummy_coeffs[j] - reflec_coeffs*dummy_coeffs[i-j]
+
+        error[i] = (1-np.square(reflec_coeffs))*error[i-1]
+        G[i] = np.sqrt(error[i])
+    coeffs[0] = 1.0
+    coeffs[1:len(coeffs)] = -coeffs[1:len(coeffs)]
+    num_coeffs = np.zeros(coeffs.shape)
+    num_coeffs[0] = 1
+    np.save('G_' + files[file_index][-5:-4], G)
+    w, h = signal.freqz(num_coeffs, coeffs)
+    plt.plot(samp_freq*w/(2*pi), displacements[int(order*8000/samp_freq)] + 20 * np.log10(abs(h)), colors[order*8000/samp_freq])
+
+plt.legend(['Orig', 'Order 4', 'Order 6', 'Order 8', 'Order 10', 'Order 12', 'Order 20'])
+plt.grid()
+plt.savefig( '../report/images/freq_resp_' + files[file_index][-5:-4] + '.png')
+
+\end{lstlisting}
+
+
 
 
 \newpage
@@ -447,7 +670,7 @@ Based on the $10$th-order LPCs, carry out the inverse filtering of the  \textbac
 \end{figure}
 
 From the figure, we can see that the autocorrelation function for \textbackslash a\textbackslash achieves a maxima (spike) at around 60 samples. Given that the sampling rate is $8$ KHz, the pitch of the signal should be $8000/60 = 133.33$ Hz. \\
-We could do this since \textbackslash a\textbackslash is a voicde sound. On the other hand, \textbackslash s\textbackslash is an unvoiced sound and hence we can't observe any maxima in it't autocorrelation function. Hence we cannot calculate a pitch for this sound. 
+We could do this since \textbackslash a\textbackslash is a voiced sound. On the other hand, \textbackslash s\textbackslash is an unvoiced sound and hence we can't observe any maxima in it't autocorrelation function. Hence we cannot calculate a pitch for this sound. 
 
 \textbf{Spectrum of residual signals}
 
@@ -463,6 +686,111 @@ We could do this since \textbackslash a\textbackslash is a voicde sound. On the 
     \caption{Spectrum of the residual signal for \textbackslash s\textbackslash from the natural recording of \textit{machali}}
     \label{fig:1}
 \end{figure}
+
+
+\begin{lstlisting}[language=Python, caption=hparams.py]
+win_size = 30.0
+dft_length = 1024
+files = ['machali_male_8k_a.wav', 'machali_male_8k_n.wav', 'machali_male_8k_i.wav', 'machali_male_16k_s.wav']
+file_index = 0
+colors = {12: 'r', 4: 'g', 6: 'b', 8: 'y', 10: 'm', 20: 'k'}
+displacements = {12: 80, 4: 0, 6: 20, 8: 40, 10: 60, 20: 100}
+\end{lstlisting}
+
+
+
+\begin{lstlisting}[language=Python, caption=q3.py]
+import librosa
+from scipy import signal
+import numpy as np
+from math import pi
+import matplotlib.pyplot as plt
+import hparams
+
+def autocorr(x):
+    result = np.correlate(x, x, mode='full')
+    return result[int(result.size/2):]
+
+
+files = hparams.files
+file_index = hparams.file_index
+colors = hparams.colors
+displacements = hparams.displacements
+
+y, samp_freq = librosa.load(files[file_index],sr=None)
+y = y/32768
+win_size = hparams.win_size/1000.0
+num_samples = int(samp_freq*win_size)
+
+window = y[int((len(y)-num_samples)/2):int((len(y)+num_samples)/2)]*np.hamming(num_samples)
+
+if file_index in [0, 1, 2]:
+    for i in range(1, len(window)):
+        window[i] = window[i] - 15.0/16.0 * window[i-1]
+
+
+order = 10
+
+R = autocorr(window)
+error = np.zeros(order+1)
+error[0] = R[0]
+G = np.zeros(order + 1)
+
+coeffs = np.zeros(order+1)
+dummy_coeffs = np.zeros(order + 1)
+
+
+for i in range(1, order +1):
+    reflec_coeffs = 0
+    dummy_coeffs[1:len(coeffs)] = coeffs[1:len(coeffs)]
+    
+    for j in range(1, i):
+        reflec_coeffs = reflec_coeffs + dummy_coeffs[j]*R[i-j]
+    reflec_coeffs = (R[i] - reflec_coeffs)/error[i - 1]
+
+    coeffs[i] = reflec_coeffs
+
+    for j in range(1, i):
+        coeffs[j] = dummy_coeffs[j] - reflec_coeffs*dummy_coeffs[i-j]
+
+    error[i] = (1-np.square(reflec_coeffs))*error[i-1]
+    G[i] = np.sqrt(error[i])
+
+coeffs[0] = 1.0
+coeffs[1:len(coeffs)] = -coeffs[1:len(coeffs)]
+num_coeffs = np.zeros(coeffs.shape)
+num_coeffs[0] = 1
+
+# window_filter = signal.lfilter(coeffs, num_coeffs, window)
+# fig1 = plt.figure()
+# dft = np.fft.fft(window_filter, 1024)
+# freq = np.fft.fftfreq(dft.shape[-1], 1/float(samp_freq))
+# plt.title('Residual Signal for ' + files[file_index][-5:-4])
+# plt.ylabel('DFT Amplitude', color='b')
+# plt.xlabel('Frequency')
+# plt.grid()
+# plt.plot(freq[:len(freq)/2], 20*np.log10(np.abs(dft[:len(dft)/2])), 'b')
+
+# fig2 = plt.figure()
+# plt.title('Residual autocorrelation for ' + files[file_index][-5:-4])
+# plt.ylabel('Amplitude', color='b')
+# plt.xlabel('Sample')
+# plt.grid()
+# plt.plot(autocorr(window_filter))
+
+w, h = signal.freqz(num_coeffs, coeffs)
+
+if file_index == 3:
+    order = int((order*samp_freq/8000))
+    plt.plot(samp_freq*w/(2*pi), displacements[order*8000/samp_freq] + 20 * np.log10(abs(h)), colors[order*8000/samp_freq])
+else:
+    plt.plot(samp_freq*w/(2*pi), displacements[order*8000/samp_freq] + 20 * np.log10(abs(h)), colors[order*8000/samp_freq])
+plt.legend(['Order 10'])
+plt.grid()
+
+plt.show()
+\end{lstlisting}
+
 
 
 \end{document}
