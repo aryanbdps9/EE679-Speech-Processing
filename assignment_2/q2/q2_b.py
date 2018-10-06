@@ -22,86 +22,55 @@ y = y/32768
 win_size = hparams.win_size/1000.0
 num_samples = int(samp_freq*win_size)
 
-win = y[int((len(y)-num_samples)/2):int((len(y)+num_samples)/2)]*np.hamming(num_samples)
+window = y[int((len(y)-num_samples)/2):int((len(y) + num_samples)/2)]*np.hamming(num_samples)
 
-# Plot the spectrum of this windowed signal
-#dft1 = np.fft.fft(win, 1024)
-#freq1 = np.fft.fftfreq(dft1.shape[-1], 1/float(fSamp))
-#plt.plot(freq1[:len(freq1)/2], 20*np.log10(np.abs(dft1[:len(dft1)/2])), 'b')
-#plt.ylabel('DFT Amplitude', color='b')
-#plt.xlabel('Frequency')
+for i in range(1, len(window)):
+    window[i] = window[i] - 15.0/16.0 * window[i-1]
 
-if fileKey in ['a', 'b', 'c']:
-    for i in range(1, len(win)):
-        win[i] = win[i] - 15.0/16.0 * win[i-1]
+dft = np.fft.fft(window, hparams.dft_length)
+freq = np.fft.fftfreq(dft.shape[-1], 1/float(samp_freq))
+plt.plot(freq[:int(len(freq)/2)], 20*np.log10(np.abs(dft[:int(len(dft)/2)])))
 
-#dft2 = np.fft.fft(win, 1024)
-#freq2 = np.fft.fftfreq(dft2.shape[-1], 1/float(fSamp))
-#plt.plot(freq2[:len(freq2)/2], 20*np.log10(np.abs(dft2[:len(dft2)/2])), 'g')
-#plt.savefig('figs/2a-'+str(fileKey)+'.png');
+plt.title('LPC Filters: Frequency Response for '+ files[file_index][-5:-4])
+plt.ylabel('Amplitude [dB]')
+plt.xlabel('Frequency')
 
-filterOrder = 10 #4, 6, 8, 10, 12, 20
+orders = np.multiply(orders,(samp_freq/8000))
+for order in orders:
+    order = int(order)
 
-#fig2 = plt.figure()
-#plt.title('LPC Filters: Frequency Response for ')
-#plt.ylabel('Amplitude [dB]')
-#plt.xlabel('Frequency [rad/sample]')
+    R = autocorr(window)
+    error = np.zeros(order+1)
+    error[0] = R[0]
+    G = np.zeros(order + 1)
 
-# Use Levinson's algorithm to calculate a[k]
-R = autocorr(win)
+    coeffs = np.zeros(order+1)
+    dummy_coeffs = np.zeros(order + 1)
+    
 
-a = np.zeros(filterOrder+1)
-ao = np.zeros(a.shape)
-E = R[0]
+    for i in range(1, order +1):
+        reflec_coeffs = 0
+        dummy_coeffs[1:len(coeffs)] = coeffs[1:len(coeffs)]
+        
+        for j in range(1, i):
+            reflec_coeffs = reflec_coeffs + dummy_coeffs[j]*R[i-j]
+        reflec_coeffs = (R[i] - reflec_coeffs)/error[i - 1]
 
-for m in range(1, filterOrder+1):
-    k = 0
-    ao[1:len(a)] = a[1:len(a)]
-    Eo = E
+        coeffs[i] = reflec_coeffs
 
-    # Calculate k
-    for l in range(1, m):
-        k = k + ao[l]*R[m-l]
-    k = (R[m] - k)/Eo
+        for j in range(1, i):
+            coeffs[j] = dummy_coeffs[j] - reflec_coeffs*dummy_coeffs[i-j]
 
-    # Calculate a
-    a[m] = k
+        error[i] = (1-np.square(reflec_coeffs))*error[i-1]
+        G[i] = np.sqrt(error[i])
+    coeffs[0] = 1.0
+    coeffs[1:len(coeffs)] = -coeffs[1:len(coeffs)]
+    num_coeffs = np.zeros(coeffs.shape)
+    num_coeffs[0] = 1
+    np.save('G_' + files[file_index][-5:-4], G)
+    w, h = signal.freqz(num_coeffs, coeffs)
+    plt.plot(samp_freq*w/(2*pi), displacements[int(order*8000/samp_freq)] + 20 * np.log10(abs(h)), colors[order*8000/samp_freq])
 
-    for l in range(1, m):
-        a[l] = ao[l] - k*ao[m-l]
-
-    E = (1-k*k)*Eo
-
-a[0] = 1.0
-a[1:len(a)] = -a[1:len(a)]
-b = np.zeros(a.shape)
-b[0] = np.sqrt(E)
-G = b[0]
-
-print a
-print b
-sys.exit()
-
-winFilt = signal.lfilter(a, b, win)
-#dft = np.fft.fft(winFilt, 1024)
-#freq = np.fft.fftfreq(dft.shape[-1], 1/float(fSamp))
-#plt.plot(freq[:len(freq)/2], 20*np.log10(np.abs(dft[:len(dft)/2])), 'b')
-#plt.ylabel('DFT Amplitude', color='b')
-#plt.xlabel('Frequency')
-
-plt.ylabel('Amplitude', color='b')
-plt.xlabel('Sample')
-plt.plot(autocorr(winFilt))
+plt.legend(['Orig', 'Order 4', 'Order 6', 'Order 8', 'Order 10', 'Order 12', 'Order 20'])
 plt.grid()
-#plt.savefig('report/2c-d-acf.png')
 plt.show()
-
-# Frequency response of LPC filter
-#w, h = signal.freqz(b, a)
-#
-#plt.plot(fSamp*w/(2*pi), displacements[filterOrder*8000/fSamp] + 20 * np.log10(abs(h)), colors[filterOrder*8000/fSamp])
-#
-#plt.legend(['Orig', 'Order 4', 'Order 6', 'Order 8', 'Order 10', 'Order 12', 'Order 20'])
-#plt.grid()
-#plt.show()
-#plt.savefig('figs/2bb-'+fileKey+'-'+str(filterOrder)+'.png')
