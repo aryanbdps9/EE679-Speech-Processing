@@ -16,7 +16,7 @@ def autocorr(x):
 
 sig_freq = hparams.sig_freq
 
-y, samp_freq = librosa.load('300.wav',sr=None)
+y, samp_freq = librosa.load( str(sig_freq) + '.wav',sr=None)
 win_size = hparams.win_size/1000.0 
 num_samples = int(samp_freq*win_size)
 window = y[:num_samples]*np.hamming(num_samples)

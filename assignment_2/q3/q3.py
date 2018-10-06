@@ -12,7 +12,8 @@ def autocorr(x):
 
 files = hparams.files
 file_index = hparams.file_index
-
+colors = hparams.colors
+displacements = hparams.displacements
 
 y, samp_freq = librosa.load(files[file_index],sr=None)
 y = y/32768
@@ -58,22 +59,32 @@ coeffs[1:len(coeffs)] = -coeffs[1:len(coeffs)]
 num_coeffs = np.zeros(coeffs.shape)
 num_coeffs[0] = 1
 
-window_filter = signal.lfilter(coeffs, num_coeffs, window)
-fig1 = plt.figure()
-dft = np.fft.fft(window_filter, 1024)
-freq = np.fft.fftfreq(dft.shape[-1], 1/float(samp_freq))
-plt.title('Residual Signal for ' + files[file_index][-5:-4])
-plt.ylabel('DFT Amplitude', color='b')
-plt.xlabel('Frequency')
-plt.grid()
-plt.plot(freq[:len(freq)/2], 20*np.log10(np.abs(dft[:len(dft)/2])), 'b')
+# window_filter = signal.lfilter(coeffs, num_coeffs, window)
+# fig1 = plt.figure()
+# dft = np.fft.fft(window_filter, 1024)
+# freq = np.fft.fftfreq(dft.shape[-1], 1/float(samp_freq))
+# plt.title('Residual Signal for ' + files[file_index][-5:-4])
+# plt.ylabel('DFT Amplitude', color='b')
+# plt.xlabel('Frequency')
+# plt.grid()
+# plt.plot(freq[:len(freq)/2], 20*np.log10(np.abs(dft[:len(dft)/2])), 'b')
 
-fig2 = plt.figure()
-plt.title('Residual autocorrelation for ' + files[file_index][-5:-4])
-plt.ylabel('Amplitude', color='b')
-plt.xlabel('Sample')
+# fig2 = plt.figure()
+# plt.title('Residual autocorrelation for ' + files[file_index][-5:-4])
+# plt.ylabel('Amplitude', color='b')
+# plt.xlabel('Sample')
+# plt.grid()
+# plt.plot(autocorr(window_filter))
+
+w, h = signal.freqz(num_coeffs, coeffs)
+
+if file_index == 3:
+    order = int((order*samp_freq/8000))
+    plt.plot(samp_freq*w/(2*pi), displacements[order*8000/samp_freq] + 20 * np.log10(abs(h)), colors[order*8000/samp_freq])
+else:
+    plt.plot(samp_freq*w/(2*pi), displacements[order*8000/samp_freq] + 20 * np.log10(abs(h)), colors[order*8000/samp_freq])
+plt.legend(['Order 10'])
 plt.grid()
-plt.plot(autocorr(window_filter))
 
 plt.show()
 

@@ -84,11 +84,11 @@ for order in orders:
             
             plt.plot(np.real(z), np.imag(z), 'xb')
             plt.plot(np.real(p), np.imag(p), 'or')
-            plt.legend(['Zeros', 'Poles'], loc=2)
+            plt.legend(['zeros', 'poles'], loc=2)
             plt.grid()
-            plt.title('Pole / Zero Plot | order = ' + str(order) )
-            plt.ylabel('Real')
-            plt.xlabel('Imaginary')
+            plt.title('pole & zero plot | order = ' + str(order) )
+            plt.ylabel('real')
+            plt.xlabel('imaginary')
             
             plt.savefig( files[file_index][-5:-4] + '_pole-zero_'+str(order)+'_.png')
 
@@ -101,9 +101,9 @@ for order in orders:
             
             plt.plot(np.real(z), np.imag(z), 'xb')
             plt.plot(np.real(p), np.imag(p), 'or')
-            plt.legend(['Zeros', 'Poles'], loc=2)
+            plt.legend(['zeros', 'poles'], loc=2)
             plt.grid()
-            plt.title('Pole / Zero Plot | order = ' + str(order) )
+            plt.title('pole & zero plot | order = ' + str(order) )
             plt.ylabel('Real')
             plt.xlabel('Imaginary')
             
@@ -112,4 +112,4 @@ for order in orders:
 
 plt.legend(['Orig', 'Order 4', 'Order 6', 'Order 8', 'Order 10', 'Order 12', 'Order 20'])
 plt.grid()
-plt.show()
+# plt.show()

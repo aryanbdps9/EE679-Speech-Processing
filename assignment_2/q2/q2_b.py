@@ -31,7 +31,7 @@ dft = np.fft.fft(window, hparams.dft_length)
 freq = np.fft.fftfreq(dft.shape[-1], 1/float(samp_freq))
 plt.plot(freq[:int(len(freq)/2)], 20*np.log10(np.abs(dft[:int(len(dft)/2)])))
 
-plt.title('LPC Filters: Frequency Response for '+ files[file_index][-5:-4])
+plt.title('Frequency Response of '+ files[file_index][-5:-4])
 plt.ylabel('Amplitude [dB]')
 plt.xlabel('Frequency')
 
@@ -73,4 +73,4 @@ for order in orders:
 
 plt.legend(['Orig', 'Order 4', 'Order 6', 'Order 8', 'Order 10', 'Order 12', 'Order 20'])
 plt.grid()
-plt.show()
+plt.savefig( '../report/images/freq_resp_' + files[file_index][-5:-4] + '.png')
