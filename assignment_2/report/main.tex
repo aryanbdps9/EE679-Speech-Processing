@@ -3,8 +3,7 @@
 \usepackage{amsmath}
 \usepackage{hyperref}
 
-\usepackage{graphix}
-
+\usepackage{graphicx}
 \usepackage{listings}
 \usepackage{color}
  
@@ -35,119 +34,435 @@
 \lstset{style=mystyle}
 
 
-\title{Understanding the Derivative}
-\author{Vincent Knight}
-\date{1984/02/14}
+\title{Assignment 2: Linear Predictive Analysis}
+\author{Pranav Sankhe| 150070009}
+\date{4/10/2018}
 
 \begin{document}
 
 \maketitle
 
-\section{Introduction}
+\section{Question}
+Synthesized vowel: Consider the synthesized vowel /a/ (formants: 730, 1090, 2440 Hz; bandwidths: 50 Hz) at two fundamental frequencies: 120 Hz, 300 Hz. Sampling rate = 8 kHz. Using a 30 ms Hamming window, implement LP analysis on a single segment using LP orders 2, 4, 6, 8, 10 using the Levinson algorithm. Compute the gain, and plot the LP spectrum magnitude (i.e. the dB magnitude frequency response of the estimated all-pole filter) for each order "p". Superimpose each plot on the original 6-pole spectral envelope with the discrete harmonic components shown with vertical lines. Comment on the characteristics of the spectral approximations of different orders.
 
-Differentiation is a concept of Mathematics studied in Calculus. There is an ongoing discussion as to who was the first to define differentiation: Leibniz or Newton \cite{bardi2006calculus}.
+\subsection{Answer}
 
-Differentiation allows for the calculation of the slope of the tangent of a curve at any given point as shown in Figure \ref{exampleplot}.
-
-\begin{figure}[!htbp]
-\begin{center}
-\begin{tikzpicture}
-\draw[domain=-2:2, color=blue] plot (\x, {1 - (\x)^2}) node[above = .5cm, right, color=blue] {$f(x)=1-x^2$};
-\draw[domain=-2:2, color=red] plot(\x,-1 * \x + 1.25) node[above = .5cm, right, color=red] {Tangent at $x=.5$};
-\draw [thick, ->] (-3,0) -- (3,0) node [above] {$x$};
-\draw [thick, ->] (0,-3) -- (0,3) node [right] {$y$};
-\node at (.5,.75) {\textbullet};
-\end{tikzpicture}
-\end{center}
-\caption{The plot of $f(x)=1-x^2$ with a tangent at $x=.5$.}\label{exampleplot}
-\end{figure}
-
-Differentiation is now a technique taught to mathematics students throughout the world. In this document I will discuss some aspects of differentiation.
-
-\section{Exploring the derivative using Sage}
-
-The definition of the limit of $f(x)$ at $x=a$ denoted as $f'(a)$ is:
-
-\begin{equation}
-f'(a) = \lim_{h\to0}\frac{f(a+h)-f(a)}{h}
-\end{equation}
-
-The following code can be used in sage to give the above limit:
-
-\begin{verbatim}
-def illustrate(f, a):
-    """
-    Function to take a function and illustrate the limiting definition of a derivative at a given point.
-    """
-    lst = []
-    for h in srange(.01, 3, .01):
-      lst.append([h,(f(a+h)-f(a))/h])
-    return list_plot(lst, axes_labels=['$x$','$\\frac{f(%.02f+h)-f(%.02f)}{h}$' % (a,a)])
-\end{verbatim}
-
-\begin{figure}[!htbp]
-\begin{center}
-\includegraphics[width=8cm]{sage1.png}
-\end{center}
-\caption{The derivative of $f(x)=1-x^2$ at $x=.5$ converging to -1 as $h\to0$.}
-\end{figure}
-
-If we want to plot the tangent at a point $\alpha$ to a function we can use the following:
-
-\begin{align}
-y=&ax+b&&\text{(definition of a straight line)}\nonumber\\
-  &f'(a)x+b&&\text{(definition of the derivative)}\nonumber\\
-  &f'(a)x+f(a)-f'(a)a&&\text{(we know that the line intersects $f$ at $(a,f(a))$}\nonumber
-\end{align}
-
-We can combine this with the approach of the previous piece of code to see how the tangential line converges as the limiting definition of the derivative converges:
-
-\begin{verbatim}
-def convergetangentialline(f, a, x1, x2, nbrofplots=50, epsilon=.1):
-    """
-    Function to make a tangential line converge
-    """
-    clrs = rainbow(nbrofplots)
-    k = 0
-    h = epsilon
-    p = plot(f, x, x1, x2)
-    while k < nbrofplots:
-        tangent(x) = fdash(f, a, h) * x + f(a) - fdash(f, a, h) * a
-        p += plot(tangent(x), x, x1, x2, color=clrs[k])
-        h += epsilon
-        k += 1
-    return p
-\end{verbatim}
-
-The plot shown in Figure \ref{lines} shows how the lines shown converge to the actual tangent to $1-x^2$ as $x=2$ (the red line is the `closest' curve).
-
-\begin{figure}[!htbp]
-\begin{center}
-\includegraphics[width=8cm]{sage0.png}
-\end{center}
-\caption{Lines converging to the tangent curve as $h\to0$.}\label{lines}
-\end{figure}
-
-Note here that the last plot is given using the \textbf{real} definition of the derivative and not the approximation.
-
-\section{Conclusions}
-
-In this report I have explored the limiting definition of the limit showing how as $h\to 0$ we can visualise the derivative of a function. The code involved \url{https://sage.maths.cf.ac.uk/home/pub/18/} uses the differentiation capabilities of Sage but also the plotting abilities.
-
-There are various other aspects that could be explored such as symbolic differentiation rules. For example:
-
-$$\frac{dx^n}{dx}=(n+1)x^{n}\text{ if }x\ne-1$$
-
-Furthermore it is interesting to not that there exists some functions that \textbf{are not} differentiable at a point such as the function $f(x)=\sin(1/x)$ which is not differentiable at $x=0$. A plot of this function is shown in Figure \ref{notdiff}.
-
-\begin{figure}[!htbp]
-\begin{center}
-\includegraphics[width=8cm]{sage2.png}
-\end{center}
-\caption{None differentiable function at $x=0$.}\label{notdiff}
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/120.png}
+    \caption{ \textbackslash a\textbackslash at $120$ Hz}
+    \label{fig:1}
 \end{figure}
 
 
-\bibliographystyle{plain}
-\bibliography{bibliography.bib}
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/300.png}
+    \caption{ \textbackslash a\textbackslash at $300$ Hz}
+    \label{fig:1}
+\end{figure}
+
+
+It is evident from the graphs that the approximation of the real spectrum keeps on getting better as we increase the order at both the signal frequencies. This is expected since as we increase the order, the LP spectrum is able to capture more and more details of the original spectrum. 
+Also, as we increase the number of poles (order) we observe that there's an increase in the sharpness of the peaks. \\ 
+
+File containing all the paramaters:
+\begin{lstlisting}[language=Python, caption=hparams.py]
+formant_freq = [730, 1090, 2440]
+formant_bw = [100, 100, 100]
+samp_freq = 8000.0
+sig_freq = 300
+time_length = 0.5
+win_size = 30.0
+dft_len = 1024
+filter_order= [2, 4, 6, 8, 10]
+\end{lstlisting}
+
+main file: 
+
+\begin{lstlisting}[language=Python, caption=q1.py]
+import librosa
+import numpy as np 
+from matplotlib import pyplot as plt
+import pylab
+from scipy import signal
+from scipy.io.wavfile import write
+import hparams
+import sys
+from math import pi
+
+
+def autocorr(x):
+    result = np.correlate(x, x, mode='full')
+    return result[int(result.size/2):]
+
+
+sig_freq = hparams.sig_freq
+
+y, samp_freq = librosa.load( str(sig_freq) + '.wav',sr=None)
+win_size = hparams.win_size/1000.0 
+num_samples = int(samp_freq*win_size)
+window = y[:num_samples]*np.hamming(num_samples)
+
+fig1 = plt.figure()
+plt.title('LPC Filters: Frequency Response for /a/ at '+str(sig_freq)+' Hz')
+plt.ylabel('Amplitude [dB]')
+plt.xlabel('Frequency [rad/sample]')
+
+colors = {2: 'r', 4: 'g', 6: 'b', 8: 'y', 10: 'm'}
+orders = hparams.filter_order
+
+for order in orders:
+    
+    R = autocorr(window)
+    error = np.zeros(order+1)
+    error[0] = R[0]
+    G = np.zeros(order + 1)
+
+    coeffs = np.zeros(order+1)
+    dummy_coeffs = np.zeros(order + 1)
+    
+
+    for i in range(1, order +1):
+        reflec_coeffs = 0
+        dummy_coeffs[1:len(coeffs)] = coeffs[1:len(coeffs)]
+        
+        for j in range(1, i):
+            reflec_coeffs = reflec_coeffs + dummy_coeffs[j]*R[i-j]
+        reflec_coeffs = (R[i] - reflec_coeffs)/error[i-1]
+
+        coeffs[i] = reflec_coeffs
+
+        for j in range(1, i):
+            coeffs[j] = dummy_coeffs[j] - reflec_coeffs*dummy_coeffs[i-j]
+
+        error[i] = (1-np.square(reflec_coeffs))*error[i-1]
+
+    coeffs[0] = 1.0
+    coeffs[1:len(coeffs)] = -coeffs[1:len(coeffs)]
+    num_coeffs = np.zeros(coeffs.shape)
+    num_coeffs[0] = 1
+    G[i] = np.sqrt(error[i])
+    w, h = signal.freqz(num_coeffs, coeffs)
+
+    plt.plot(samp_freq*w/(2*np.pi), 10*order + 20 * np.log10(abs(h)), colors[order])
+
+formant_freq = hparams.formant_freq
+formant_bw = hparams.formant_bw
+
+r = np.exp(np.multiply(-np.pi, formant_bw)/samp_freq)
+theta = 2*np.multiply(np.pi, formant_freq)/samp_freq
+
+poles = np.concatenate([r * np.exp(1j*theta), r * np.exp(-1j*theta)])
+zeros = np.zeros(poles.shape, poles.dtype)
+
+b, a = signal.zpk2tf(zeros, poles, 1)
+
+wf, hf = signal.freqz(b, a)
+
+plt.plot(samp_freq*wf/(2*pi), 120 + 20 * np.log10(abs(hf)), 'c')
+plt.legend(['Order 2', 'Order 4', 'Order 6', 'Order 8', 'Order 10', 'Orig'])
+plt.grid()
+
+plt.show()
+\end{lstlisting}
+
+
+
+\newpage
+
+
+\section{Question 2}
+Natural speech: Consider the speech signal in \textit{machali.wav} (male voice), sampled at $8$ kHz.  Consider the following signal segments in the final word “pani”:  (1)  \textbackslash a\textbackslash   (first half);  (2) \textbackslash n\textbackslash ;  (3) \textbackslash I\textbackslash  and (4) \textbackslash s\textbackslash in the word \textit{uska}.  \\ 
+
+Use PRAAT to extract the above segments to separate .wav files for further analyses as below.  (Note: for \textbackslash s\textbackslash, $16$ kHz sampled audio is better.) \\ 
+
+Compute and plot the narrowband spectrum using a Hamming window of duration = $30$ ms before and after pre-emphasis. \\ 
+
+Using a 30 ms Hamming window centered in the segment of the waveform (pre-emphasised for the voiced sounds): \\ 
+
+Compute the autocorrelation coefficients required for LPC calculation at various p = $4,6,8,10,12,20$.  Use the Levinson algorithm to compute the LP coefficients from the autocorrelation coefficients. Show the pole-zero plots of the estimated all-pole filter for p=$6,10$.  \\ 
+
+Compute the gain and plot the LPC spectrum magnitude (i.e. the dB magnitude frequency response of the estimated all-pole filter) for each order "p". Superimpose each plot on the narrowband dB magnitude spectrum of part 1 (after pre-emphasis). Comment on the characteristics of the spectra. \\ 
+ 
+Plot error signal energy (i.e. square of gain) vs p. \\ 
+
+\subsection{Answer}
+
+\textbf{Pre-Emphasis}
+Note that in the plots, the original spectra is in blue and the pre-emphasized spectra is in green. 
+
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/spectra_a.png}
+    \caption{ \textbackslash a\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/spectra_n.png}
+    \caption{ \textbackslash n\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/spectra_i.png}
+    \caption{\textbackslash I\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/spectra_s.png}
+    \caption{ \textbackslash s\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+
+\newpage
+\textbf{Poles and Zeros}
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/a_pole-zero_6_.png}
+    \caption{Poles and zeros when order = 6 for \textbackslash a\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/a_pole-zero_10_.png}
+    \caption{Poles and zeros when order = 10 for \textbackslash a\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/n_pole-zero_6_.png}
+    \caption{Poles and zeros when order = 6 for \textbackslash n\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/n_pole-zero_10_.png}
+    \caption{Poles and zeros when order = 10 for \textbackslash n\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/i_pole-zero_6_.png}
+    \caption{Poles and zeros when order = 6 for \textbackslash i\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/i_pole-zero_10_.png}
+    \caption{ Poles and zeros when order = 10 for \textbackslash i\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/s_pole-zero_12_.png}
+    \caption{Poles and zeros when order = 12 for \textbackslash s\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/s_pole-zero_20_.png}
+    \caption{ Poles and zeros when order = 20 for \textbackslash s\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+
+\newpage
+
+\textbf{Linear Predictive Coding Spectrum}
+
+
+The gain for \textbackslash a\textbackslash from the natural recording of \textit{machali} is: 
+\begin{itemize}
+\item Order 2: 15.30 
+\item Order 4: 13.13
+\item Order 6: 12.84
+\item Order 8: 12.42
+\item Order 10: 10.99
+\item Order 12: 10.47
+\item Order 20: 10.07
+\end{itemize}    
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/gain_a.png}
+    \caption{Gain of \textbackslash a\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+ 
+ 
+
+ 
+ 
+
+The gain for \textbackslash n\textbackslash from the natural recording of \textit{machali} is: 
+
+\begin{itemize}
+\item Order 2: 39.31 
+\item Order 4: 24.83
+\item Order 6: 17.51
+\item Order 8: 17.07
+\item Order 10: 17.00
+\item Order 12: 16.58
+\item Order 20: 16.12
+\end{itemize}  
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/gain_n.png}
+    \caption{Gain of \textbackslash n\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+The gain for \textbackslash I\textbackslash from the natural recording of \textit{machali} is: 
+\begin{itemize}
+\item Order 2: 50.79 
+\item Order 4: 28.53
+\item Order 6: 25.04
+\item Order 8: 22.36
+\item Order 10: 21.19
+\item Order 12: 21.05
+\item Order 20: 19.42
+\end{itemize}  
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/gain_i.png}
+    \caption{Gain of \textbackslash I\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+The gain for \textbackslash s\textbackslash from the natural recording of \textit{machali} is: 
+
+\begin{itemize}
+\item Order 2: 67.89 
+\item Order 4: 65.96
+\item Order 6: 45.62
+\item Order 8: 39.59
+\item Order 10: 39.07
+\item Order 12: 38.32
+\item Order 20: 36.29
+\end{itemize}  
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/gain_s.png}
+    \caption{Gain of \textbackslash s\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+
+\newpage
+
+\textbf{Error signal energy}
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/error_energy_a.png}
+    \caption{Error Signal Energy for \textbackslash i\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/error_energy_n.png}
+    \caption{Error Signal Energy for \textbackslash i\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/error_energy_i.png}
+    \caption{Error Signal Energy for \textbackslash s\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/error_energy_s.png}
+    \caption{ Error Signal Energy for \textbackslash s\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\newpage
+\section{Question 3}
+Based on the $10$th-order LPCs, carry out the inverse filtering of the  \textbackslash a\textbackslash vowel segment and of the unvoiced sound  \textbackslash s\textbackslash. Obtain the residual error signal in each case. Can you measure the pitch period of the voiced sound from the residual waveform? Use the acf to detect the pitch. Plot the magnitude spectrum of each of the residual signals. 
+
+\subsection{Answer}
+
+
+\textbf{}
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/res_signal_a.png}
+    \caption{Residual signal  for \textbackslash a\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/res_sig_s.png}
+    \caption{Residual signal for \textbackslash s\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/res_autocorr_a.png}
+    \caption{Autocorrelation of the residual signal for  \textbackslash a\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/res_autocorr_s.png}
+    \caption{Autocorrelation of the residual signal for \textbackslash s\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+From the figure, we can see that the autocorrelation function for \textbackslash a\textbackslash achieves a maxima (spike) at around 60 samples. Given that the sampling rate is $8$ KHz, the pitch of the signal should be $8000/60 = 133.33$ Hz. \\
+We could do this since \textbackslash a\textbackslash is a voicde sound. On the other hand, \textbackslash s\textbackslash is an unvoiced sound and hence we can't observe any maxima in it't autocorrelation function. Hence we cannot calculate a pitch for this sound. 
+
+\textbf{Spectrum of residual signals}
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/res_spec_a.png}
+    \caption{Spectrum of the residual signal for  \textbackslash a\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \includegraphics[width=\linewidth]{./images/res_spec_s.png}
+    \caption{Spectrum of the residual signal for \textbackslash s\textbackslash from the natural recording of \textit{machali}}
+    \label{fig:1}
+\end{figure}
+
+
 \end{document}
